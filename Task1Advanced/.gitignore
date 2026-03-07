@@ -1,0 +1,21 @@
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.tfplan
+.crash.log
+
+# Terraform directory (shared in root)
+.terraform/
+.terraform.lock.hcl
+
+# Environment specific files
+*.tfvars
+*.tfvars.json
+
+# Secret files
+*.pem
+*.key
+*secret*
+
+# SSH keys (keep .pub files if needed)
+*_ssh_key

@@ -1,0 +1,30 @@
+@startuml c4_context_stage2
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title [Context Diagram] Stage 2: Scaling & Federated Governance (6-18 Months)
+
+Person(user, "Domain User", "Physician, Banker, Data Scientist")
+System(portal, "Self-Service Data Portal", "Advanced discovery, visualization, and query.")
+
+System_Boundary(data_mesh, "Active Data Mesh") {
+    System(gov_system, "Federated Governance", "Enforces security and quality across domains.")
+    System(event_mesh, "Event Mesh (Kafka)", "Core messaging backbone.")
+    
+    System_Ext(fin_domain, "FinTech Domain", "Data products: Credit, Payments, Fraud.")
+    System_Ext(med_domain, "Medical Domain", "Data products: Patient Journey, Diagnostics.")
+    System_Ext(ai_domain, "AI/ML Domain", "Data products: AI Diagnosis, Pred. Analytics.")
+}
+
+System_Boundary(legacy, "Legacy Bridge") {
+    System(dwh, "Legacy DWH", "Serving as a legacy data source via CDC.")
+}
+
+Rel(user, portal, "Discover and query data products")
+Rel(portal, data_mesh, "Accesses multi-domain data products")
+Rel(gov_system, data_mesh, "Audits and enforces policies")
+Rel(data_mesh, event_mesh, "Exchanges domain events")
+Rel(dwh, event_mesh, "Streams historical data via CDC")
+
+@enduml

@@ -1,0 +1,117 @@
+@startuml Terraform Apply Workflow
+title Terraform Apply Workflow (Вручную с подтверждением)
+
+start
+
+:Workflow Dispatch;
+note right
+  **Пользователь запускает через UI:**
+  - Выбирает окружение (dev/stage/prod)
+  - Вводит название для подтверждения
+end note
+
+partition "GitHub Actions" {
+  :Validate Confirmation;
+  note right: Проверяет совпадение ввода\nс выбранным окружением\n(защита от случайного запуска)
+
+  if (Environment = prod?) then (yes)
+    :Environment Protection;
+    note right
+      **Требуется одобрение reviewer**
+      (настраивается в Settings → Environments)
+
+      Без одобрения workflow
+      не продолжится
+    end note
+  else (no)
+  endif
+
+  partition "GitHub Actions Runner" {
+    :Configure Credentials;
+    note right
+      **Автоматическое получение токена:**
+      1. Сохраняет SA key во временный файл
+      2. yc iam create-token --service-account-key-file
+      3. Устанавливает YC_TOKEN в env
+      4. Удаляет временный файл ключа
+
+      **Secrets:**
+      - YC_SA_KEY_ID
+      - YC_SA_PRIVATE_KEY
+    end note
+
+    :Terraform Init;
+    note right
+      **ВАЖНО!**
+      terraform init -reconfigure
+
+      1. Перечитывает backend конфигурацию
+      2. Принудительно загружает state из S3
+      3. Игнорирует кэшированные настройки
+    end note
+
+    :Terraform Plan (pre-apply);
+    note right
+      terraform plan -out=tfplan
+
+      Сохраняет план в бинарный файл
+      Этот файл будет использован для apply
+    end note
+
+    :Display Plan Summary;
+    note right: Выводит план в логах\nДля аудита перед применением
+
+    :Terraform Apply;
+    note right
+      **Что происходит:**
+      1. Применяет план из tfplan
+      2. Создаёт/изменяет ресурсы в YC
+      3. Обновляет state локально
+    end note
+
+    :Push State to S3;
+    note right
+      **Автоматически после apply:**
+      1. Загружает обновлённый state в S3
+      2. State доступен для следующих запусков
+
+      ⚠️ State locking НЕ доступен
+      в Yandex Object Storage
+    end note
+
+    :Extract Outputs;
+    note right
+      Сохраняет выходные параметры:
+      - VM ID
+      - External IP
+      - SSH command
+    end note
+  }
+}
+
+:Upload Apply Artifacts;
+note right
+  apply_output.txt
+  outputs.json
+
+  Сохраняются на 30 дней
+end note
+
+if (Status = Success?) then (yes)
+  :Create Deployment Summary;
+  note right
+    GitHub Step Summary:
+    - Environment
+    - Status
+    - Commit SHA
+    - Triggered by
+    - Terraform Outputs
+  end note
+else (no)
+  :Notify on Failure;
+  note right: Выводит сообщение об ошибке\nдля уведомления команды
+endif
+
+stop
+
+@enduml

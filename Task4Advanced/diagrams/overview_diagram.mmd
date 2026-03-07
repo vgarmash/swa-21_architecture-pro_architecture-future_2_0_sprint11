@@ -1,0 +1,30 @@
+graph TB
+    subgraph "Контекст «Будущее 2.0»"
+        subgraph "Подразделение: Клиники"
+            MC[Medical Core<br/>Медицинский домен]
+            AI[AI Services<br/>ИИ-сервисы]
+        end
+        
+        subgraph "Подразделение: Финтех"
+            FC[Finance Core<br/>Финансовый домен]
+            BK[Bank Services<br/>Банковские сервисы]
+        end
+        
+        subgraph "Подразделение: Интеграция"
+            Gateway[API Gateway<br/>Шлюз]
+            Events[Event Mesh<br/>Событийная шина]
+        end
+    end
+    
+    MC --> Events
+    AI --> Events
+    FC --> Events
+    BK --> Events
+    Events --> Gateway
+    
+    style MC fill:#e1f5fe
+    style AI fill:#e1f5fe
+    style FC fill:#fff3e0
+    style BK fill:#fff3e0
+    style Events fill:#e8f5e9
+    style Gateway fill:#f3e5f5

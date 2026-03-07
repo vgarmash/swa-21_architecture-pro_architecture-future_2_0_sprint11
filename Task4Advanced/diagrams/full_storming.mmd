@@ -1,0 +1,123 @@
+flowchart TB
+    subgraph "Patient Management Flow"
+        direction LR
+        CMD1["[Command] Register Patient"] -->|triggers| EVT1>PatientRegistered]
+        EVT1 -->|creates| AGG1[(Patient)]
+        EVT1 -.->|notifies| EVT2>PatientCreated]
+        
+        CMD2["[Command] Update Patient Info"] -->|triggers| EVT2>PatientUpdated]
+        EVT2 -->|updates| AGG1
+        
+        CMD3["[Command] Schedule Visit"] -->|triggers| EVT3>VisitScheduled]
+        EVT3 -->|creates| AGG2[(Visit)]
+        EVT3 -.->|triggers| EVT4>AppointmentConfirmed]
+    end
+    
+    subgraph "Diagnostic Flow"
+        direction LR
+        CMD4["[Command] Order Study"] -->|triggers| EVT4>StudyOrdered]
+        EVT4 -->|creates| AGG3[(Study)]
+        
+        CMD5["[Command] Complete Study"] -->|triggers| EVT5>StudyCompleted]
+        EVT5 -->|updates| AGG3
+        EVT5 -.->|publishes| EVT6>StudyResultsAvailable]
+        
+        EVT6 -.->|triggers analysis| CMD6["[Command] Run AI Analysis"]
+    end
+    
+    subgraph "AI Analysis Flow"
+        direction LR
+        CMD6 -->|triggers| EVT7>AnalysisRequested]
+        EVT7 -->|creates| AGG4[(AnalysisJob)]
+        
+        EVT7 -.->|enqueues| EVT8>AnalysisQueued]
+        
+        EVT8 -.->|processes| CMD7["[Command] Complete Inference"]
+        CMD7 -->|triggers| EVT9>AnalysisCompleted]
+        EVT9 -->|creates| AGG5[(Prediction)]
+        EVT9 -.->|triggers| EVT10>PredictionGenerated]
+    end
+    
+    subgraph "Treatment Flow"
+        direction LR
+        EVT10 -.->|used for| CMD8["[Command] Prescribe Treatment"]
+        CMD8 -->|triggers| EVT11>TreatmentPrescribed]
+        EVT11 -->|creates| AGG6[(TreatmentPlan)]
+        
+        CMD9["[Command] Update Treatment"] -->|triggers| EVT12>TreatmentUpdated]
+        EVT12 -->|updates| AGG6
+    end
+    
+    subgraph "Banking Flow"
+        direction LR
+        EVT2 -.->|creates| CMD10["[Command] Open Account"]
+        CMD10 -->|triggers| EVT13>AccountCreated]
+        EVT13 -->|creates| AGG7[(Account)]
+        
+        CMD11["[Command] Apply for Credit"] -->|triggers| EVT14>CreditApplicationSubmitted]
+        EVT14 -->|creates| AGG8[(CreditApplication)]
+        
+        CMD12["[Command] Approve Credit"] -->|triggers| EVT15>CreditApproved]
+        EVT15 -->|creates| AGG9[(Credit)]
+        EVT15 -.->|triggers| EVT16>CreditAccounted]
+    end
+    
+    subgraph "Payment Flow"
+        direction LR
+        EVT11 -.->|generates| CMD13["[Command] Create Invoice"]
+        CMD13 -->|triggers| EVT17>InvoiceGenerated]
+        EVT17 -->|creates| AGG10[(Invoice)]
+        
+        CMD14["[Command] Process Payment"] -->|triggers| EVT18>PaymentInitiated]
+        EVT18 -->|creates| AGG11[(Payment)]
+        
+        EVT18 -.->|confirms| EVT19>PaymentCompleted]
+        EVT19 -->|updates| AGG11
+    end
+    
+    subgraph "Cross-Domain Events"
+        direction LR
+        EVT1 -.->|correlates| EVT20>CustomerCreated]
+        EVT2 -.->|correlates| EVT21>CustomerVerified]
+        EVT13 -.->|correlates| EVT21
+        
+        EVT3 -.->|triggers| CMD15["[Command] Send Notification"]
+        CMD15 -->|triggers| EVT22>NotificationSent]
+        EVT22 -->|creates| AGG12[(Notification)]
+    end
+    
+    style AGG1 fill:#e3f2fd,stroke:#1976d2
+    style AGG2 fill:#e3f2fd,stroke:#1976d2
+    style AGG3 fill:#e3f2fd,stroke:#1976d2
+    style AGG4 fill:#c8e6c9,stroke:#388e3c
+    style AGG5 fill:#c8e6c9,stroke:#388e3c
+    style AGG6 fill:#e3f2fd,stroke:#1976d2
+    style AGG7 fill:#fff3e0,stroke:#f57c00
+    style AGG8 fill:#fff3e0,stroke:#f57c00
+    style AGG9 fill:#fff3e0,stroke:#f57c00
+    style AGG10 fill:#fff3e0,stroke:#f57c00
+    style AGG11 fill:#fff3e0,stroke:#f57c00
+    style AGG12 fill:#fce4ec,stroke:#c2185b
+    
+    style EVT1 fill:#ffecb3,stroke:#f57c00
+    style EVT2 fill:#ffecb3,stroke:#f57c00
+    style EVT3 fill:#ffecb3,stroke:#f57c00
+    style EVT4 fill:#ffecb3,stroke:#f57c00
+    style EVT5 fill:#ffecb3,stroke:#f57c00
+    style EVT6 fill:#ffecb3,stroke:#f57c00
+    style EVT7 fill:#ffecb3,stroke:#f57c00
+    style EVT8 fill:#ffecb3,stroke:#f57c00
+    style EVT9 fill:#ffecb3,stroke:#f57c00
+    style EVT10 fill:#ffecb3,stroke:#f57c00
+    style EVT11 fill:#ffecb3,stroke:#f57c00
+    style EVT12 fill:#ffecb3,stroke:#f57c00
+    style EVT13 fill:#ffecb3,stroke:#f57c00
+    style EVT14 fill:#ffecb3,stroke:#f57c00
+    style EVT15 fill:#ffecb3,stroke:#f57c00
+    style EVT16 fill:#ffecb3,stroke:#f57c00
+    style EVT17 fill:#ffecb3,stroke:#f57c00
+    style EVT18 fill:#ffecb3,stroke:#f57c00
+    style EVT19 fill:#ffecb3,stroke:#f57c00
+    style EVT20 fill:#ffecb3,stroke:#f57c00
+    style EVT21 fill:#ffecb3,stroke:#f57c00
+    style EVT22 fill:#ffecb3,stroke:#f57c00

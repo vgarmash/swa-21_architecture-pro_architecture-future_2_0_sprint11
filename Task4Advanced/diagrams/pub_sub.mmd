@@ -1,0 +1,40 @@
+flowchart TB
+    subgraph "Издатели (Publishers)"
+        Med["Медицинский домен"]
+        Fin["Финансовый домен"]
+        AI["ИИ-домен"]
+    end
+    
+    subgraph "Kafka Topics"
+        Events[("Event Mesh<br/>(Kafka)")]
+    end
+    
+    subgraph "Подписчики (Subscribers)"
+        Portal["Data Portal"]
+        DWH["Analytics DWH"]
+        Notif["Notification Service"]
+        AI_Svc["AI Processing"]
+        Report["Reporting"]
+    end
+    
+    Med -->|"PatientRegistered<br/>PatientUpdated"| Events
+    Med -->|"StudyCompleted<br/>TreatmentPrescribed"| Events
+    Fin -->|"AccountCreated<br/>CreditApproved"| Events
+    Fin -->|"PaymentCompleted<br/>InvoiceGenerated"| Events
+    AI -->|"AnalysisCompleted<br/>PredictionGenerated"| Events
+    
+    Events -->|"Patient.*"| Portal
+    Events -->|"Study.*"| AI_Svc
+    Events -->|"Credit.*"| Report
+    Events -->|"Payment.*"| DWH
+    Events -->|"Treatment.*"| Notif
+    
+    style Med fill:#e1f5fe
+    style Fin fill:#fff3e0
+    style AI fill:#e8f5e9
+    style Events fill:#c8e6c9
+    style Portal fill:#e1f5fe
+    style DWH fill:#fff3e0
+    style Notif fill:#fce4ec
+    style AI_Svc fill:#e8f5e9
+    style Report fill:#e1f5fe

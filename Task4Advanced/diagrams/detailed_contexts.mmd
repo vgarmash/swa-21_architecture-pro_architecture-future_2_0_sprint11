@@ -1,0 +1,74 @@
+graph TB
+    subgraph MD ["Медицинский домен (Medical Domain)"]
+        direction TB
+        subgraph "Patient Context"
+            P1[Patient<br/>Пациент]
+            P2[Visit<br/>Визит]
+            P3[MedicalRecord<br/>Медкарта]
+        end
+        
+        subgraph "Diagnostic Context"
+            D1[Study<br/>Исследование]
+            D2[Result<br/>Результат]
+            D3[Diagnosis<br/>Диагноз]
+        end
+        
+        subgraph "Treatment Context"
+            T1[Prescription<br/>Назначение]
+            T2[Procedure<br/>Процедура]
+            T3[TreatmentPlan<br/>План лечения]
+        end
+    end
+    
+    subgraph FD ["Финансовый домен (Finance Domain)"]
+        direction TB
+        subgraph "Banking Context"
+            B1[Account<br/>Счёт]
+            B2[Credit<br/>Кредит]
+            B3[Transaction<br/>Транзакция]
+        end
+        
+        subgraph "Payments Context"
+            PM1[Payment<br/>Платеж]
+            PM2[Invoice<br/>Счёт]
+            PM3[Refund<br/>Возврат]
+        end
+        
+        subgraph "Insurance Context"
+            I1[Policy<br/>Полис]
+            I2[Claim<br/>Заявление]
+            I3[Coverage<br/>Покрытие]
+        end
+    end
+    
+    subgraph AID ["ИИ-домен (AI Services Domain)"]
+        direction TB
+        subgraph "ML Pipeline Context"
+            ML1[Model<br/>Модель]
+            ML2[TrainingJob<br/>Обучение]
+            ML3[Inference<br/>Инференс]
+        end
+        
+        subgraph "Analysis Context"
+            A1[MedicalAnalysis<br/>Мед. анализ]
+            A2[Prediction<br/>Прогноз]
+            A3[Recommendation<br/>Рекомендация]
+        end
+    end
+    
+    subgraph SKD ["Общие домены (Shared Kernel)"]
+        direction TB
+        SK1[Customer<br/>Клиент]
+        SK2[Document<br/>Документ]
+        SK3[Notification<br/>Уведомление]
+    end
+    
+    P1 --> SK1
+    B1 --> SK1
+    ML1 -.-> D1
+    A1 -.-> P3
+    
+    style MD fill:#e3f2fd,stroke:#1976d2
+    style FD fill:#fff3e0,stroke:#f57c00
+    style AID fill:#e8f5e9,stroke:#388e3c
+    style SKD fill:#fce4ec,stroke:#c2185b
