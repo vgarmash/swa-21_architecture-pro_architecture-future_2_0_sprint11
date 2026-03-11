@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant P as Patient
+    participant MC as Medical Core
+    participant AI as AI Services
+    participant BC as Banking Core
+    participant PM as Payment Service
+    
+    P->>MC: Register Patient
+    MC->>MC: PatientRegistered
+    MC->>BC: CustomerCreated (Event)
+    BC->>BC: AccountCreated
+    BC-->>MC: AccountCreated (Event)
+    
+    MC->>MC: Schedule Visit
+    MC->>MC: StudyOrdered
+    MC->>AI: StudyCompleted (Event)
+    
+    AI->>AI: AnalysisRequested
+    AI->>AI: InferenceCompleted
+    AI-->>MC: PredictionGenerated (Event)
+    
+    MC->>MC: TreatmentPrescribed
+    MC->>PM: InvoiceGenerated (Event)
+    
+    PM->>PM: PaymentInitiated
+    PM->>BC: PaymentCompleted (Event)
+    BC->>BC: AccountUpdated
+    BC-->>PM: TransactionRecorded (Event)
+    
+    PM-->>MC: PaymentProcessed (Event)
+    MC->>MC: TreatmentConfirmed

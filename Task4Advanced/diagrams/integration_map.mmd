@@ -1,0 +1,15 @@
+graph LR
+    PC[Patient Context] -->|"PatientCreated"| DI[Diagnostic Context]
+    PC -->|"PatientCreated"| BC[Banking Context]
+    DI -->|"StudyCompleted"| AI[Analysis Context]
+    AI -->|"AnalysisReady"| TC[Treatment Context]
+    BC -->|"CreditApproved"| PC
+    TC -->|"TreatmentStarted"| PM[Payments Context]
+    PM -->|"PaymentProcessed"| BC
+    
+    style PC fill:#e1f5fe
+    style DI fill:#e1f5fe
+    style TC fill:#e1f5fe
+    style BC fill:#fff3e0
+    style PM fill:#fff3e0
+    style AI fill:#e8f5e9

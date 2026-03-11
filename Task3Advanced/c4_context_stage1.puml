@@ -1,0 +1,29 @@
+@startuml c4_context_stage1
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title [Context Diagram] Stage 1: Foundation & Pilot (0-6 Months)
+
+Person(business_user, "Business User", "Analyst, Manager, Physician")
+System(portal, "Self-Service Data Portal (MVP)", "Portal for discovering and consuming data products.")
+
+System_Boundary(legacy_systems, "Legacy & Core Systems") {
+    System(dwh, "Legacy DWH", "MS SQL Server 2008. Source of truth for historical data.")
+    System(camel, "Integration Bus", "Apache Camel ESB. Legacy messaging.")
+}
+
+System_Boundary(data_mesh_platform, "Emerging Data Mesh Platform") {
+    System(event_mesh, "Event Mesh (Kafka)", "Real-time event backbone.")
+    System_Ext(fin_domain, "FinTech Domain", "First domain data product (Credit, Payments).")
+}
+
+Rel(business_user, portal, "Queries data, builds reports", "HTTPS")
+Rel(portal, fin_domain, "Consumes data products", "SQL/API")
+Rel(portal, dwh, "Queries legacy data", "SQL")
+
+Rel(fin_domain, event_mesh, "Publishes domain events", "Kafka")
+Rel(dwh, event_mesh, "Streams changes (CDC)", "Debezium/Kafka Connect")
+Rel(camel, event_mesh, "Bridges legacy messages", "Camel-Kafka Connector")
+
+@enduml

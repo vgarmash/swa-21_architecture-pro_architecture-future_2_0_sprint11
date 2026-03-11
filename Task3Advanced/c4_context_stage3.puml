@@ -1,0 +1,28 @@
+@startuml c4_context_stage3
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title [Context Diagram] Stage 3: Full Data Mesh & Legacy Retirement (18-36 Months)
+
+Person(consumer, "Data Consumer", "All departments + external partners")
+System(self_service, "Data Mesh Platform", "Automated self-service infrastructure.")
+
+System_Boundary(domain_landscape, "Business Domains") {
+    System_Ext(fin_domain, "FinTech", "Autonomous data ecosystem.")
+    System_Ext(med_domain, "Health", "Autonomous data ecosystem.")
+    System_Ext(ai_domain, "AI Services", "Autonomous data ecosystem.")
+    System_Ext(pharma_domain, "Pharma", "NEW: Integration of acquired assets.")
+    System_Ext(hardware_domain, "MedTech Hardware", "NEW: IoT & Inventory streams.")
+}
+
+System_Boundary(global_governance, "Global Governance") {
+    System(compliance, "Compliance Service", "GDPR, HIPAA, Financial audit automation.")
+}
+
+Rel(consumer, self_service, "Discover, request, and use data")
+Rel(self_service, domain_landscape, "Automated data product provisioning")
+Rel(domain_landscape, domain_landscape, "Peer-to-peer data consumption via Event Mesh")
+Rel(compliance, domain_landscape, "Continuous monitoring and auditing")
+
+@enduml

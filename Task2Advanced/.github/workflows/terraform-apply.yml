@@ -1,0 +1,164 @@
+# =============================================================================
+# Terraform Apply Workflow
+# =============================================================================
+# Manual workflow to apply Terraform changes
+# Requires confirmation and optional approval for production
+# =============================================================================
+
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        type: choice
+        options:
+          - dev
+          - stage
+          - prod
+      confirmation:
+        description: 'Type the environment name to confirm (e.g., "dev" for dev environment)'
+        required: true
+        type: string
+
+# Prevent concurrent applies for the same environment
+concurrency:
+  group: terraform-apply-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  terraform-apply:
+    name: Terraform Apply (${{ github.event.inputs.environment }})
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment }}
+      # Production requires manual approval in GitHub Settings
+      url: https://console.cloud.yandex.ru/folders/${{ secrets.YC_FOLDER_ID }}/compute
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate confirmation
+        id: confirm
+        run: |
+          INPUT_ENV="${{ github.event.inputs.environment }}"
+          CONFIRMATION="${{ github.event.inputs.confirmation }}"
+          
+          if [ "$INPUT_ENV" != "$CONFIRMATION" ]; then
+            echo "❌ Confirmation failed! You typed '$CONFIRMATION' but expected '$INPUT_ENV'"
+            exit 1
+          fi
+          echo "✅ Confirmation successful!"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Configure Yandex Cloud credentials
+        run: |
+          # Save Service Account key to file
+          echo "${{ secrets.YC_SA_PRIVATE_KEY }}" > /tmp/sa-key.json
+          
+          # Get IAM token using Service Account key
+          echo "YC_TOKEN=$(yc iam create-token --service-account-key-file /tmp/sa-key.json)" >> $GITHUB_ENV
+          
+          # Set Object Storage credentials
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.YC_SA_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=$(jq -r '.private_key' /tmp/sa-key.json <<< '${{ secrets.YC_SA_PRIVATE_KEY }}')" >> $GITHUB_ENV
+          
+          # Clean up key file
+          rm -f /tmp/sa-key.json
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -input=false -reconfigure
+        working-directory: Task2Advanced/envs/${{ github.event.inputs.environment }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_KEY }}
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        working-directory: Task2Advanced/envs/${{ github.event.inputs.environment }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_KEY }}
+
+      - name: Terraform Plan (pre-apply check)
+        id: preplan
+        run: |
+          terraform plan -no-color -input=false -out=tfplan
+          terraform show -no-color tfplan > plan_summary.txt
+        working-directory: Task2Advanced/envs/${{ github.event.inputs.environment }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_KEY }}
+          YC_TOKEN: ${{ secrets.YC_TOKEN }}
+
+      - name: Display Plan Summary
+        run: |
+          echo "## Plan Summary"
+          echo '```terraform'
+          cat plan_summary.txt
+          echo '```'
+        working-directory: Task2Advanced/envs/${{ github.event.inputs.environment }}
+
+      - name: Terraform Apply
+        id: apply
+        run: |
+          terraform apply -auto-approve -no-color -input=false tfplan 2>&1 | tee apply_output.txt
+        working-directory: Task2Advanced/envs/${{ github.event.inputs.environment }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_KEY }}
+          YC_TOKEN: ${{ secrets.YC_TOKEN }}
+
+      - name: Extract Outputs
+        id: outputs
+        run: |
+          terraform output -json > outputs.json
+        working-directory: Task2Advanced/envs/${{ github.event.inputs.environment }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_KEY }}
+          YC_TOKEN: ${{ secrets.YC_TOKEN }}
+
+      - name: Create Deployment Summary
+        if: always()
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f outputs.json ]; then
+            echo "### Terraform Outputs" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat outputs.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Apply Output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-apply-${{ github.event.inputs.environment }}-${{ github.run_id }}
+          path: |
+            Task2Advanced/envs/${{ github.event.inputs.environment }}/apply_output.txt
+            Task2Advanced/envs/${{ github.event.inputs.environment }}/outputs.json
+          retention-days: 30
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ Deployment to ${{ github.event.inputs.environment }} failed!"
+          echo "Check the logs above for details."
+          exit 1

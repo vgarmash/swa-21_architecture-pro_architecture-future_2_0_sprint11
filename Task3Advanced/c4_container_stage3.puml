@@ -1,0 +1,40 @@
+@startuml c4_container_stage3
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title [Container Diagram] Stage 3: Full Data Mesh (18-36 Months)
+
+System_Boundary(self_service_infra, "Self-Service Data Platform") {
+    Container(portal, "Data Market UI", "React", "One-stop shop for all domains.")
+    Container(mesh_orchestrator, "Mesh Orchestrator", "Python/K8s", "Automates data product lifecycle.")
+    Container(virtual_query, "Global Query Engine", "Trino/Starburst", "Federated query across all regional silos.")
+}
+
+System_Boundary(domains, "Distributed Domains") {
+    Container(fin_dp, "Finance DP", "Microservices", "Payments, Credit, Audit.")
+    Container(med_dp, "Medical DP", "Microservices", "Patient Lifecycle (Non-PII).")
+    Container(ai_dp, "AI/ML DP", "MLOps", "Real-time diagnosis assist.")
+    Container(pharma_dp, "Pharma DP", "New Domain", "Supply chain & Drug inventory.")
+    Container(iot_dp, "MedTech IoT", "New Domain", "Device telemetry & Maintenance.")
+}
+
+System_Boundary(backbone, "Cloud Data Backbone") {
+    Container(event_bus, "Global Event Mesh", "Kafka Cluster (Geo-distributed)", "Real-time event sharing.")
+    Container(storage, "Domain Data Lake/Store", "S3 / Snowflake / BigQuery", "Decentralized domain-owned storage.")
+}
+
+System_Boundary(security, "Security & Privacy Layer") {
+    Container(masking_service, "Dynamic Masking", "Immuta/Privacera", "Automated PII/Financial data protection.")
+    Container(auth_service, "Identity & Access", "Keycloak/Okta", "Single Sign-On and granular ACL.")
+}
+
+Rel(portal, mesh_orchestrator, "Deploys new Data Product", "API")
+Rel(mesh_orchestrator, domains, "Provisions infra", "Terraform/K8s")
+
+Rel(virtual_query, domains, "Federated Query", "SQL")
+Rel(domains, event_bus, "Async Event Sharing", "Kafka")
+Rel(domains, security, "Checks access policies")
+Rel(consumer, portal, "Discovers products")
+
+@enduml

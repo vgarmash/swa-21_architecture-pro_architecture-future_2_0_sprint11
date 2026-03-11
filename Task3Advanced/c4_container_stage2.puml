@@ -1,0 +1,40 @@
+@startuml c4_container_stage2
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title [Container Diagram] Stage 2: Scaling & Federated Governance (6-18 Months)
+
+System_Boundary(self_service_portal, "Self-Service Platform") {
+    Container(portal_ui, "Unified Data UI", "React", "Marketplace for data products.")
+    Container(query_engine, "Query Engine", "Trino/Presto", "Virtualization layer across domains.")
+}
+
+System_Boundary(domain_services, "Domain Data Products") {
+    Container(fin_dp, "Finance Data Product", "Microservice", "Real-time analytics.")
+    Container(med_dp, "Medical Data Product", "Microservice", "Patient insights (Non-clinical).")
+    Container(ai_dp, "AI Insights", "Python/MLOps", "Model performance & predictions.")
+}
+
+System_Boundary(platform_shared, "Shared Platform Infrastructure") {
+    Container(kafka_cluster, "Kafka Cluster", "Kafka 3.x", "Highly available event bus.")
+    Container(flink, "Stream Processing", "Apache Flink", "Real-time transformations/aggregations.")
+    Container(catalog, "Data Catalog", "DataHub/Amundsen", "Metadata, Lineage, Search.")
+}
+
+System_Boundary(governance, "Governance Layer") {
+    Container(policy_engine, "Policy Engine", "OPA (Open Policy Agent)", "Role-based and attribute-based access.")
+}
+
+Rel(portal_ui, query_engine, "Sends SQL queries")
+Rel(query_engine, fin_dp, "Queries Finance", "JDBC/gRPC")
+Rel(query_engine, med_dp, "Queries Medical", "JDBC/gRPC")
+
+Rel(fin_dp, kafka_cluster, "Produces/Consumes events")
+Rel(med_dp, kafka_cluster, "Produces/Consumes events")
+Rel(flink, kafka_cluster, "Processes streams")
+
+Rel(med_dp, policy_engine, "Validates access for PII data")
+Rel(query_engine, catalog, "Checks product existence/schema")
+
+@enduml

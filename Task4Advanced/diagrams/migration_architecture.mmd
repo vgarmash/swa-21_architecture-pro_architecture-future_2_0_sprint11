@@ -1,0 +1,20 @@
+graph LR
+    subgraph "Легаси"
+        DWH[DWH SQL Server 2008]
+        Camel[Apache Camel ESB]
+        PB[PowerBuilder UI]
+    end
+    
+    subgraph "Целевая архитектура"
+        Kafka["Event Mesh (Kafka)"]
+        Domains[Domain Services]
+    end
+    
+    DWH -->|"CDC (Debezium)"| Kafka
+    Camel -->|"Anti-Corruption Layer"| Kafka
+    Domains -->|"Domain Events"| Kafka
+    
+    style DWH fill:#ffcdd2
+    style Camel fill:#ffcdd2
+    style Kafka fill:#c8e6c9
+    style Domains fill:#bbdefb

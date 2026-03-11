@@ -1,0 +1,116 @@
+@startuml Terraform CI/CD Architecture
+
+title Архитектура Terraform CI/CD с удалённым состоянием
+
+package "GitHub Repository" as GitHub {
+  folder "Task2Advanced/" as Task2 {
+    folder ".github/workflows/" as Workflows {
+      component "terraform-plan.yml" as PlanWorkflow
+      component "terraform-apply.yml" as ApplyWorkflow
+    }
+    folder "envs/dev/" as DevEnv {
+      component "main.tf" as DevMain
+      component "backend.tf" as DevBackend
+      component "dev.tfvars" as DevVars
+    }
+    folder "envs/stage/" as StageEnv {
+      component "main.tf" as StageMain
+      component "backend.tf" as StageBackend
+      component "stage.tfvars" as StageVars
+    }
+    folder "envs/prod/" as ProdEnv {
+      component "main.tf" as ProdMain
+      component "backend.tf" as ProdBackend
+      component "prod.tfvars" as ProdVars
+    }
+    folder "modules/vm/" as VmModule {
+      component "main.tf" as VmMain
+      component "variables.tf" as VmVars
+      component "outputs.tf" as VmOut
+    }
+  }
+}
+
+package "GitHub Actions" as Actions {
+  component "CI/CD Runner\n(ubuntu-latest)" as Runner
+  database "GitHub Secrets" as Secrets
+  component "Environment\nProtection" as EnvProtection
+}
+
+package "Yandex Cloud" as YC {
+  component "Object Storage\n(S3 Backend)" as S3 {
+    folder "yc-bucket-terraform-state/" as Bucket {
+      folder "dev/" as DevState
+      folder "stage/" as StageState
+      folder "prod/" as ProdState
+    }
+  }
+
+  component "IAM Service" as IAM
+  component "Compute Cloud" as Compute
+  component "VPC Network" as VPC
+}
+
+' Developer interactions
+actor "Developer" as Dev
+
+' Plan workflow
+Dev --> PlanWorkflow : Push PR
+PlanWorkflow --> Runner : Trigger workflow
+Runner --> DevMain : Checkout code
+Runner --> DevBackend : Read backend config
+Runner --> S3 : terraform init\n(read state)
+S3 --> Runner : Return state
+
+' Updated authentication flow
+Runner --> Secrets : Get SA credentials
+Secrets --> Runner : YC_SA_KEY_ID, YC_SA_PRIVATE_KEY
+Runner --> IAM : yc iam create-token\n--service-account-key-file
+IAM --> Runner : IAM token (1 hour)
+Runner --> Compute : terraform plan
+Compute --> Runner : Plan output
+Runner --> Dev : Comment in PR
+
+' Apply workflow
+Dev --> ApplyWorkflow : Manual trigger
+ApplyWorkflow --> EnvProtection : Check approval
+EnvProtection --> Runner : Approved
+Runner --> StageBackend : Read backend config
+Runner --> S3 : terraform init\n(lock state)
+S3 --> Runner : State locked
+
+' Updated authentication flow for apply
+Runner --> Secrets : Get SA credentials
+Secrets --> Runner : YC_SA_KEY_ID, YC_SA_PRIVATE_KEY
+Runner --> IAM : yc iam create-token\n--service-account-key-file
+IAM --> Runner : IAM token (1 hour)
+
+Runner --> Compute : terraform apply
+Compute --> Runner : Resources created
+Runner --> S3 : terraform state push\n(update state)
+S3 --> Runner : State updated
+Runner --> Dev : Deployment summary
+
+' State management notes
+note right of S3
+  **State Management:**
+  - State file хранится в S3
+  - State locking НЕ доступен
+  - Защита через GitHub Concurrency
+  - Шифрование на rest
+end note
+
+note left of Secrets
+  **GitHub Secrets:**
+  - YC_SA_KEY_ID (не истекает)
+  - YC_SA_PRIVATE_KEY (не истекает)
+  - YC_FOLDER_ID
+  - YC_CLOUD_ID
+
+  **IAM Token:**
+  - Получается автоматически
+  - Срок действия: 1 час
+  - Обновляется при запуске
+end note
+
+@enduml

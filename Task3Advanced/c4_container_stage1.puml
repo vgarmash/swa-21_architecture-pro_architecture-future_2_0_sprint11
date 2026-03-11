@@ -1,0 +1,42 @@
+@startuml c4_container_stage1
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title [Container Diagram] Stage 1: Foundation & Pilot (0-6 Months)
+
+Person(user, "Business Analyst", "Consumes data products")
+
+System_Boundary(self_service_portal, "Self-Service Data Portal") {
+    Container(web_app, "Data Catalog UI", "React", "Interface to discover data products.")
+    Container(api_gateway, "Portal API", "Node.js/Express", "Orchestrates access to data.")
+    ContainerDb(metadata_db, "Metadata Store", "PostgreSQL", "Stores catalog and governance metadata.")
+}
+
+System_Boundary(fin_domain, "FinTech Domain (Pilot)") {
+    Container(fin_api, "FinTech Data API", "Go/Java", "Serves financial data products.")
+    ContainerDb(fin_db, "FinTech DB", "PostgreSQL/SQL Server", "Transactional & Analytical storage for the domain.")
+    Container(event_producer, "Event Producer", "Kafka Lib", "Publishes domain events.")
+}
+
+System_Boundary(data_platform, "Central Data Platform") {
+    Container(kafka, "Message Broker", "Apache Kafka", "Real-time event streaming.")
+    Container(schema_registry, "Schema Registry", "Confluent Schema Registry", "Enforces data contracts.")
+    Container(kafka_connect, "Kafka Connect", "Debezium", "CDC from Legacy DWH.")
+}
+
+System_Boundary(legacy, "Legacy Landscape") {
+    ContainerDb(dwh_sql, "Legacy DWH", "SQL Server 2008", "Source of core patient and inventory data.")
+}
+
+Rel(user, web_app, "Browses catalog", "HTTPS")
+Rel(web_app, api_gateway, "Requests data access", "JSON/REST")
+Rel(api_gateway, metadata_db, "Reads product metadata")
+
+Rel(api_gateway, fin_api, "Fetches financial data", "REST/gRPC")
+Rel(fin_api, fin_db, "Queries domain data")
+Rel(event_producer, kafka, "Sends 'Payment Created' events", "Avro")
+Rel(kafka_connect, dwh_sql, "Reads WAL logs", "JDBC/CDC")
+Rel(kafka_connect, kafka, "Publishes CDC events")
+
+@enduml

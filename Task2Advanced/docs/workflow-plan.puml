@@ -1,0 +1,58 @@
+@startuml Terraform Plan Workflow
+title Terraform Plan Workflow (Автоматически при PR)
+
+start
+
+:Push в Pull Request;
+note right: Или ручной запуск\nчерез workflow_dispatch
+
+partition "GitHub Actions Runner" {
+  :Checkout repository;
+  note right: actions/checkout@v4\nСкачивает код на runner
+
+  :Setup Terraform;
+  note right: hashicorp/setup-terraform@v3\nУстанавливает Terraform 1.6.0
+
+  :Configure Credentials;
+  note right
+    **Автоматическое получение токена:**
+    1. Сохраняет SA key во временный файл
+    2. yc iam create-token --service-account-key-file
+    3. Устанавливает YC_TOKEN в env
+    4. Удаляет временный файл ключа
+  end note
+
+  :Terraform Init;
+  note right
+    **ВАЖНО!**
+    1. Читает backend.tf
+    2. Подключается к S3
+    3. Загружает state файл
+    4. Скачивает провайдер
+    5. Инициализирует directory
+  end note
+
+  :Terraform Validate;
+  note right: Проверяет синтаксис\nи семантику конфигурации
+
+  :Terraform Plan;
+  note right
+    **Что происходит:**
+    1. Сравнивает код с состоянием из S3
+    2. Вычисляет разницу (delta)
+    3. Генерирует план изменений
+    4. Возвращает список ресурсов
+  end note
+
+  :Save Plan Output;
+}
+
+:Comment PR with Plan;
+note right: actions/github-script@v7\nДобавляет комментарий в PR\nс результатом plan
+
+:Upload Plan Artifact;
+note right: Сохраняет план\nкак артефакт (30 дней)
+
+stop
+
+@enduml
